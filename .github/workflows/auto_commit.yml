@@ -1,0 +1,40 @@
+name: Auto Commit
+
+on:
+  schedule:
+    # Run every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run auto-commit (single cycle)
+        run: python auto_commit.py --once
+
+      - name: Push changes (if any)
+        run: |
+          if git log origin/$(git rev-parse --abbrev-ref HEAD)..HEAD --oneline | grep -q .; then
+            git push
+          else
+            echo "Nothing to push."
+          fi
